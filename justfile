@@ -104,8 +104,8 @@ _choose:
 		printf '%s\n' "$device"
 	fi
 
-# Print the USB vendor and product IDs the launch agent needs.
-ids device="Blue Microphones":
+# Print a USB device's vendor and product IDs. Find the name with `just usb`.
+ids device:
 	#!/usr/bin/env bash
 	set -euo pipefail
 
@@ -122,7 +122,8 @@ ids device="Blue Microphones":
 
 	echo "$ids"
 	echo
-	echo "Put these two numbers in dist/local.disable-thru.plist."
+	echo "\`just configure\` fills these in for you. This recipe is for"
+	echo "checking them by hand."
 
 # List every USB device with its vendor and product IDs.
 usb:

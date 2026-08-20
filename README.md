@@ -59,10 +59,13 @@ Run `just` with no arguments to list them.
 | `just status` | Shows whether the agent is registered, and its last exit status. |
 | `just uninstall` | Unloads and removes the agent. |
 | `just clean` | Deletes the compiled program. |
-| `just ids` | Prints a USB device's vendor and product IDs. |
+| `just ids "<usb-name>"` | Prints a USB device's vendor and product IDs. |
 | `just usb` | Lists every USB device with its IDs. |
 
 ## Using the program directly
+
+`just build` puts the program in `~/.local/bin`. The examples below assume that
+directory is on your `PATH`; if it is not, call it by its full path instead.
 
 The program takes a device name, matched as a prefix:
 
@@ -76,8 +79,8 @@ It reports which device it changed, including the CoreAudio device ID:
 Thru disabled: Yeti Stereo Microphone [id 114]
 ```
 
-That ID changes between restarts and replugs, which is why the program matches
-on the name instead.
+That ID is assigned by CoreAudio and changes between restarts and replugs, so
+expect a different number. The program matches on the name for that reason.
 
 To see the devices it can act on:
 
