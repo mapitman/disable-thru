@@ -5,14 +5,13 @@ device's input straight back to its own output, so you hear yourself. If you do
 not want that, you turn it off in Audio MIDI Setup, and macOS turns it back on
 at the next restart.
 
-This is not a bug in your settings. The Thru state lives on the CoreAudio device
-object rather than in a preference file. macOS rebuilds that object from the
-driver default every time the device appears, which means every restart and
-every time you unplug the device.
+This is not a bug in your settings. The Thru state lives on the CoreAudio
+device object, which macOS rebuilds from the driver default every time the
+device appears: at every restart, and at every replug. Audio MIDI Setup writes
+the setting to that object, so the rebuild takes it with it.
 
-Nothing you click in Audio MIDI Setup can survive that, because there is no file
-to save it in. This program turns Thru off, and a launch agent runs it at the
-right moments.
+This program sets Thru off again, and a launch agent runs the program each time
+the setting would otherwise come back.
 
 Written for a Blue Yeti, but it works with any input device that exposes a Thru
 setting.
@@ -93,27 +92,20 @@ so most audio devices do not appear.
 
 ## Why a launch agent
 
-An `on-window-detected` rule or a login item is not enough here, for two
-different reasons.
-
-A login item starts the program inside a shell session, so it opens a terminal
-window and keeps it open.
-
-A launch agent has no terminal. It also supports two triggers, and this program
-needs both:
+launchd starts the agent with no terminal attached, and it fires on both of the
+events this program cares about:
 
 - `RunAtLoad` covers logging in.
 - A `LaunchEvents` block with `com.apple.iokit.matching` covers the device being
   plugged in.
 
-The generated agent retries for up to ten seconds on the second trigger. The USB
-device attaches before CoreAudio finishes registering it, so the first attempt
-would otherwise find nothing.
+On the second trigger the agent retries for up to ten seconds, because the USB
+device attaches a moment before CoreAudio finishes registering it.
 
 ## How the configuration works
 
-`dist/local.disable-thru.plist.template` is a template, not a finished plist. It
-holds three placeholders:
+`dist/local.disable-thru.plist.template` holds three placeholders, which
+`just configure` fills in:
 
 | Placeholder | Filled with |
 | --- | --- |

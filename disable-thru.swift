@@ -137,16 +137,15 @@ if arguments.contains("--list") || arguments.contains("-l") {
     exit(0)
 }
 
-// An unrecognised flag is a mistake worth reporting, rather than treating it as
-// a device name that will never match.
+// Report an unrecognised flag, so a typo surfaces immediately.
 if let flag = arguments.first(where: { $0.hasPrefix("-") }) {
     FileHandle.standardError.write("Unknown option: \(flag)\n\n".data(using: .utf8)!)
     print(usage)
     exit(2)
 }
 
-// No default device: this tool is not specific to one microphone, and silently
-// targeting the wrong one would be worse than asking.
+// Require a device name, so the program only ever acts on the device the caller
+// asked for.
 guard let targetName = arguments.first else {
     FileHandle.standardError.write("No device name given.\n\n".data(using: .utf8)!)
     print(usage)
