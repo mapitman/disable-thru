@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>local.yeti-thru</string>
+
+    <!-- launchd does not expand ~ or $HOME in ProgramArguments, nor in the
+         StandardOutPath / StandardErrorPath keys. Run the helper through a
+         shell so the shell expands $HOME, which launchd sets per user. This
+         keeps the file portable between accounts.
+
+         The USB device attaches before CoreAudio finishes registering it, so
+         the helper cannot find the device on the first try. Retry for about
+         ten seconds, then stop. The helper is safe to run when the device is
+         absent: it reports that it found nothing and exits 0. -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/sh</string>
+        <string>-c</string>
+        <string>for i in 1 2 3 4 5 6 7 8 9 10; do "$HOME/.local/bin/yeti-thru" | grep -q '^Thru disabled' &amp;&amp; exit 0; sleep 1; done; "$HOME/.local/bin/yeti-thru" >> "$HOME/Library/Logs/yeti-thru.log" 2>&amp;1</string>
+    </array>
+
+    <!-- Fires at login. -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- Fires when the Yeti attaches, so replugging the microphone re-applies
+         the setting. Vendor 1133 (0x046d) product 2743 (0x0ab7), read from
+         IORegistry with:
+             ioreg -r -c IOUSBHostDevice -n "Blue Microphones" -l -->
+    <key>LaunchEvents</key>
+    <dict>
+        <key>com.apple.iokit.matching</key>
+        <dict>
+            <key>local.yeti-thru.attach</key>
+            <dict>
+                <key>IOProviderClass</key>
+                <string>IOUSBHostDevice</string>
+                <key>IOMatchLaunchStream</key>
+                <true/>
+                <key>idVendor</key>
+                <integer>1133</integer>
+                <key>idProduct</key>
+                <integer>2743</integer>
+            </dict>
+        </dict>
+    </dict>
+</dict>
+</plist>

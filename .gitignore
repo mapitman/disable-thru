@@ -1,0 +1,7 @@
+# Compiled output. Rebuild with:
+#     swiftc -O -o ~/.local/bin/yeti-thru yeti-thru.swift
+yeti-thru
+*.dSYM/
+
+# macOS
+.DS_Store
