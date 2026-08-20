@@ -1,11 +1,9 @@
 import CoreAudio
 import Foundation
 
-// Disable the "Thru" (hardware play-through) setting on the Yeti input device.
+// Disable the "Thru" (hardware play-through) setting on an input device.
 // macOS resets this to the driver default whenever the device enumerates, so a
 // LaunchAgent re-applies it at login and on each replug.
-
-let targetName = "Yeti Stereo Microphone"
 
 func deviceIDs() -> [AudioDeviceID] {
     var address = AudioObjectPropertyAddress(
@@ -71,11 +69,23 @@ func inputChannels(of device: AudioDeviceID) -> Int {
     return list.reduce(0) { $0 + Int($1.mNumberChannels) }
 }
 
-func setPlayThru(_ device: AudioDeviceID, enabled: Bool) -> Bool {
-    var address = AudioObjectPropertyAddress(
+/// The address of the Thru property. Play-through lives on the output scope
+/// even though the control belongs to an input device.
+func playThruAddress() -> AudioObjectPropertyAddress {
+    AudioObjectPropertyAddress(
         mSelector: kAudioDevicePropertyPlayThru,
         mScope: kAudioObjectPropertyScopeOutput,
         mElement: kAudioObjectPropertyElementMain)
+}
+
+/// Whether the device exposes a Thru setting at all. Most input devices do not.
+func hasPlayThru(_ device: AudioDeviceID) -> Bool {
+    var address = playThruAddress()
+    return AudioObjectHasProperty(device, &address)
+}
+
+func setPlayThru(_ device: AudioDeviceID, enabled: Bool) -> Bool {
+    var address = playThruAddress()
 
     guard AudioObjectHasProperty(device, &address) else {
         return false
@@ -84,6 +94,63 @@ func setPlayThru(_ device: AudioDeviceID, enabled: Bool) -> Bool {
     var value: UInt32 = enabled ? 1 : 0
     let size = UInt32(MemoryLayout<UInt32>.size)
     return AudioObjectSetPropertyData(device, &address, 0, nil, size, &value) == noErr
+}
+
+let usage = """
+Usage: disable-thru <device-name>
+       disable-thru --list
+
+Turns off the Thru setting on an audio input device, so the device stops routing
+its input back to its own output. The device name is matched as a prefix.
+
+Options:
+  --list, -l    List input devices that expose a Thru setting, then exit.
+  --help, -h    Show this message.
+
+Example:
+  disable-thru "Yeti Stereo Microphone"
+"""
+
+/// Input devices that carry a Thru control, in the order CoreAudio reports.
+func thruCapableInputs() -> [AudioDeviceID] {
+    deviceIDs().filter { inputChannels(of: $0) > 0 && hasPlayThru($0) }
+}
+
+let arguments = Array(CommandLine.arguments.dropFirst())
+
+if arguments.contains("--help") || arguments.contains("-h") {
+    print(usage)
+    exit(0)
+}
+
+if arguments.contains("--list") || arguments.contains("-l") {
+    let devices = thruCapableInputs()
+    if devices.isEmpty {
+        print("No input devices with a Thru setting found.")
+        exit(0)
+    }
+
+    for device in devices {
+        print(name(of: device))
+    }
+
+    exit(0)
+}
+
+// An unrecognised flag is a mistake worth reporting, rather than treating it as
+// a device name that will never match.
+if let flag = arguments.first(where: { $0.hasPrefix("-") }) {
+    FileHandle.standardError.write("Unknown option: \(flag)\n\n".data(using: .utf8)!)
+    print(usage)
+    exit(2)
+}
+
+// No default device: this tool is not specific to one microphone, and silently
+// targeting the wrong one would be worse than asking.
+guard let targetName = arguments.first else {
+    FileHandle.standardError.write("No device name given.\n\n".data(using: .utf8)!)
+    print(usage)
+    exit(2)
 }
 
 var matched = false

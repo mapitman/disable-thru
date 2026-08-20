@@ -1,7 +1,10 @@
-# Compiled output. Rebuild with:
-#     swiftc -O -o ~/.local/bin/yeti-thru yeti-thru.swift
-yeti-thru
+# Compiled output. Rebuild with: just build
+disable-thru
 *.dSYM/
+
+# Generated from dist/local.disable-thru.plist.template by `just configure`.
+# Specific to one machine's hardware, so not tracked.
+dist/local.disable-thru.plist
 
 # macOS
 .DS_Store
